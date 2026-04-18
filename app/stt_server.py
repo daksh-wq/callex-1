@@ -3,9 +3,8 @@ import json
 import time
 import numpy as np
 import webrtcvad
-from faster_whisper import WhisperModel
-from concurrent.futures import ThreadPoolExecutor
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from faster_whisper import WhisperModel as CallexAcousticModel
 import uvicorn
 import logging
 
@@ -16,14 +15,14 @@ app = FastAPI()
 executor = ThreadPoolExecutor(max_workers=4)
 
 print("[Microservice STT] Starting dedicated PyTorch inference environment...")
-print("[Microservice STT] Loading 'faster-whisper' model exclusively to GPU/CPU memory...")
+print("[Microservice STT] Loading 'Callex Core Acoustic Model' exclusively to GPU/CPU memory...")
 
 try:
-    global_model = WhisperModel("large-v3", device="auto", compute_type="default")
+    global_model = CallexAcousticModel("large-v3", device="auto", compute_type="default")
     print(f"[Microservice STT] ✅ Model loaded successfully.")
 except Exception as e:
     print(f"[Microservice STT] ⚠️ Fallback to 'int8/cpu' due to load error: {e}")
-    global_model = WhisperModel("small", device="cpu", compute_type="int8")
+    global_model = CallexAcousticModel("small", device="cpu", compute_type="int8")
 
 @app.websocket("/ws")
 async def stt_websocket_endpoint(websocket: WebSocket):

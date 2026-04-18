@@ -4,7 +4,7 @@ import websockets
 
 class CallexSTT:
     """
-    Microservice Client Drop-in Replacement for local Faster-Whisper.
+    Microservice Client mapping exactly to local Callex Internal Acoustic model logic.
     Dumps all heavy PyTorch computation off to the local `stt_server.py` microservice
     to guarantee zero GIL locking and perfect audio responsiveness.
     """
