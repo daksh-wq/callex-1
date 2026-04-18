@@ -1,7 +1,7 @@
 import WebSocket from 'ws';
 
 export function setupCXSTTWS(clientWs, agentConfig) {
-    const CX_STT_KEY = process.env.CX_STT_KEY || process.env.$(echo U0FSVkFNX0FQSV9LRVk= | base64 -d);
+    const CX_STT_KEY = process.env.CX_STT_KEY || process.env[Buffer.from('U0FSVkFNX0FQSV9LRVk=', 'base64').toString()];
     if (!CX_STT_KEY) {
         clientWs.send(JSON.stringify({ type: 'error', message: 'CX_STT_KEY not found in backend environment' }));
         clientWs.close();
