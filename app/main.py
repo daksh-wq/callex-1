@@ -436,13 +436,10 @@ def upload_to_firebase(file_path: str, object_name: str = None) -> Optional[str]
         # Upload the file
         blob.upload_from_filename(file_path, content_type='audio/wav')
         
-        # Generate a signed URL (expires in 24 hours) — NOT public
-        from datetime import timedelta
-        url = blob.generate_signed_url(
-            expiration=timedelta(hours=24),
-            method='GET'
-        )
-        print(f"[FIREBASE] Upload Successful (signed URL, 24h expiry)")
+        # Make the recording permanent and public
+        blob.make_public()
+        url = blob.public_url
+        print(f"[FIREBASE] Upload Successful (permanent public URL)")
         return url
     except Exception as e:
         print(f"[FIREBASE Error] Upload failed: {__safe_log(e)}")
