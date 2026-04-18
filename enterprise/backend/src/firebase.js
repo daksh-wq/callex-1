@@ -9,21 +9,33 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
-// Load service account from the path specified in .env or default
-const credPath = process.env.FIREBASE_CREDENTIALS_PATH
-    ? resolve(__dirname, '../../..', process.env.FIREBASE_CREDENTIALS_PATH)
-    : resolve(__dirname, '../../../firebase_credentials.json');
+let db, storage, firebaseAuth;
 
-const serviceAccount = JSON.parse(readFileSync(credPath, 'utf8'));
+try {
+    // Load service account from the path specified in .env or default
+    const credPath = process.env.FIREBASE_CREDENTIALS_PATH
+        ? resolve(__dirname, '../../..', process.env.FIREBASE_CREDENTIALS_PATH)
+        : resolve(__dirname, '../../../firebase_credentials.json');
 
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'lakhuteleservices-1f9e0.appspot.com',
-});
+    const serviceAccount = JSON.parse(readFileSync(credPath, 'utf8'));
 
-export const db = admin.firestore();
-export const storage = admin.storage();
-export const firebaseAuth = admin.auth();
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'lakhuteleservices-1f9e0.appspot.com',
+    });
+
+    db = admin.firestore();
+    storage = admin.storage();
+    firebaseAuth = admin.auth();
+    console.log("[FIREBASE] ✅ Initialized successfully");
+} catch (e) {
+    console.error("\n[FIREBASE ERROR] ❌ Failed to initialize Firebase!");
+    console.error("Reason:", e.message);
+    console.error("The backend will continue to run to serve the UI, but database operations will fail!\n");
+}
+
+export { db, storage, firebaseAuth };
+
 
 // ═══════════════════════════════════════════════
 // HELPER UTILITIES for Firestore
