@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 from collections import defaultdict
+from modules.hindi_kenlm import LanguageModelScorer
 
 class CTCNGramBeamSearchDecoder:
     """
@@ -18,6 +19,9 @@ class CTCNGramBeamSearchDecoder:
         # Hyperparameters for N-Gram Language Model Fusion scoring
         self.alpha = alpha # LM Weight (Grammar importance over audio)
         self.beta = beta   # Word Insertion Penalty (Stops runaway endless predictions)
+        
+        # Native Deep Language Model mapping matrices
+        self.lm = LanguageModelScorer()
 
     def decode(self, log_probs_seq):
         """
@@ -48,9 +52,9 @@ class CTCNGramBeamSearchDecoder:
                         else:
                             new_prefix = prefix + char
 
-                    # In a Tier-1 true system, this score is dynamically updated via an Arpa LM matrix.
-                    # e.g., score += self.alpha * LM.score(new_prefix) + self.beta
-                    new_score = score + log_prob
+                    # Integrate Native Language Model boundaries explicitly scaling Beam parameters
+                    lm_score = self.lm.score(new_prefix)
+                    new_score = score + log_prob + (self.alpha * lm_score) + self.beta
                     
                     if new_score > next_beam[(new_prefix, idx)]:
                         next_beam[(new_prefix, idx)] = new_score
