@@ -101,7 +101,7 @@ async def analyze_call_outcome(client: httpx.AsyncClient, history: List[Dict], a
     cx_llm_key = await get_cx_llm_key()
     import base64 as _b64
     _llm_base = _b64.b64decode(b'aHR0cHM6Ly9nZW5lcmF0aXZlbGFuZ3VhZ2UuZ29vZ2xlYXBpcy5jb20vdjFiZXRhL21vZGVscy8=').decode()
-    _m = _b64("Z2VtaW5pLTIuNS1mbGFzaDpnZW5lcmF0ZUNvbnRlbnQ=").decode()
+    _m = _b64.b64decode(b"Z2VtaW5pLTIuNS1mbGFzaDpnZW5lcmF0ZUNvbnRlbnQ=").decode()
     url = f"{_llm_base}{_m}?key={cx_llm_key}"
     payload = {
         "contents": [{"role": "user", "parts": [{"text": f"{system_prompt}\n\nTranscript:\n{transcript}"}]}],
@@ -180,7 +180,7 @@ async def auto_train_sandbox_agent(agent_id: str, transcript: str, current_promp
         cx_llm_key = await get_cx_llm_key()
         import base64 as _b64
         _llm_base = _b64.b64decode(b'aHR0cHM6Ly9nZW5lcmF0aXZlbGFuZ3VhZ2UuZ29vZ2xlYXBpcy5jb20vdjFiZXRhL21vZGVscy8=').decode()
-        _m = _b64("Z2VtaW5pLTIuNS1wcm86Z2VuZXJhdGVDb250ZW50").decode()
+        _m = _b64.b64decode(b"Z2VtaW5pLTIuNS1wcm86Z2VuZXJhdGVDb250ZW50").decode()
         url = f"{_llm_base}{_m}?key={cx_llm_key}"
         
         meta_prompt = f"""You are a Master AI Training Architect. 
