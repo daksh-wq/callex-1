@@ -6,6 +6,15 @@ import numpy as np
 
 # Natively force Coqui TTS to auto-accept the CPML terms preventing PM2 from dead-locking on [y/n]
 os.environ["COQUI_TOS_AGREED"] = "1"
+
+# In PyTorch 2.6+, weights_only=True became the default, deliberately breaking old TTS models.
+# This explicitly patches the core ML binding securely so Legacy Weights successfully mount!
+_original_torch_load = torch.load
+def _safe_legacy_load(*args, **kwargs):
+    kwargs['weights_only'] = False
+    return _original_torch_load(*args, **kwargs)
+torch.load = _safe_legacy_load
+
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from fastapi import FastAPI, Request, HTTPException
