@@ -8,7 +8,7 @@ import os
 
 from tokenizer import CallexSTTTokenizer
 from dataset import AudioDatasetSTT, collate_stt_batch
-from model import NativeConformerCTC
+from model import StreamingEmformerCTC
 
 def launch_conformer_training(rank=0, world_size=1):
     """
@@ -24,9 +24,9 @@ def launch_conformer_training(rank=0, world_size=1):
     # ── BIG DATA QUEUES ──
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True, collate_fn=collate_stt_batch, num_workers=4)
 
-    # ── CONFORMER INSTANTIATION ──
-    # Utilizing 12 massive Conformer blocks explicitly for production level inference
-    model = NativeConformerCTC(vocab_size=tokenizer.vocab_size, num_layers=12, d_model=256).to(device)
+    # ── EMFORMER INSTANTIATION ──
+    # Utilizing 12 massive Emformer blocks explicitly for production level inference
+    model = StreamingEmformerCTC(vocab_size=tokenizer.vocab_size, num_layers=12, d_model=256).to(device)
 
     # ── OPTIMIZERS & LOSS SCHEMES ──
     # Connectionist Temporal Classification dynamically manages mapping pure lengths across the Conformer output
@@ -55,12 +55,13 @@ def launch_conformer_training(rank=0, world_size=1):
             optimizer.zero_grad()
 
             with autocast():
-                # Emit Conformer predictions spanning deep physical attention blocks natively
-                outputs, out_lens = model(mels, mel_lens)
+                # Emit Emformer predictions using explicit offline caching bounds mathematically mapped
+                # Note: In offline training natively, we pass Null memory arrays simulating clean epoch starts
+                outputs, memory = model(mels, memory=None)
                 
                 # CTC shapes must execute strictly: (T, B, C)
                 outputs = outputs.transpose(0, 1).log_softmax(2)
-                loss = criterion(outputs, transcript_seqs, out_lens, target_lens)
+                loss = criterion(outputs, transcript_seqs, mel_lens, target_lens)
 
             # Mixed-Precision execution guarantees no OOM constraints dynamically occur!
             scaler.scale(loss).backward()
