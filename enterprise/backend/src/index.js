@@ -33,13 +33,10 @@ import reportsRouter from './routes/reports.js';
 import authRouter from './routes/auth.js';
 import followupsRouter from './routes/followups.js';
 
-// WS handlers
 import { setupSupervisorWS } from './ws/supervisor.js';
 import { setupDashboardWS } from './ws/dashboard.js';
 import { setupCXSTTWS } from './ws/_wst.js';
 
-import path from 'path';
-import { fileURLToPath } from 'url';
 const __root_filename = fileURLToPath(import.meta.url);
 const __root_dirname = path.dirname(__root_filename);
 dotenv.config({ path: path.resolve(__root_dirname, '../../../.env') });
@@ -131,8 +128,6 @@ export function broadcastToCall(callId, data) {
 }
 
 // Serve the Enterprise Dashboard frontend
-import path from 'path';
-import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DASHBOARD_DIST = path.resolve(__dirname, '../../frontend/dist');
