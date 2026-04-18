@@ -1,11 +1,12 @@
 import asyncio
 import json
+import os
 import websockets
 
 class CallexSTT:
     """
     Microservice Client mapping exactly to local Callex Internal Acoustic model logic.
-    Dumps all heavy PyTorch computation off to the local `stt_server.py` microservice
+    Dumps all heavy PyTorch computation off to the GPU `stt_server.py` microservice
     to guarantee zero GIL locking and perfect audio responsiveness.
     """
     def __init__(
@@ -35,8 +36,11 @@ class CallexSTT:
         
     async def connect(self):
         try:
-            # Connect natively to the new local detached STT server!
-            self._ws = await websockets.connect("ws://127.0.0.1:8123/ws")
+            # Route to GPU server via environment variable (same as TTS)
+            gpu_ip = os.getenv("CALLEX_GPU_URL", "127.0.0.1")
+            stt_url = f"ws://{gpu_ip}:8123/ws"
+            print(f"[Callex AI STT] 🔗 Connecting to GPU STT: {stt_url}")
+            self._ws = await websockets.connect(stt_url)
             self._is_connected = True
             
             # Start background send/receive loops so we don't block VoIP
