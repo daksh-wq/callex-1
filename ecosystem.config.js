@@ -24,6 +24,8 @@ module.exports = {
         NODE_ENV: "production",
         PORT: 4500
       },
+      error_file: "logs/enterprise-error.log",
+      out_file: "logs/enterprise-out.log",
       autorestart: true,
       watch: false,
       max_memory_restart: "1G"
