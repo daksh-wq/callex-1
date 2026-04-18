@@ -18,6 +18,8 @@ import asyncio
 import json
 import time
 import os
+import signal
+import subprocess
 import numpy as np
 import webrtcvad
 from concurrent.futures import ThreadPoolExecutor
@@ -38,23 +40,59 @@ logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
 app = FastAPI(title="Callex GPU STT API")
 executor = ThreadPoolExecutor(max_workers=4)
 
-# ── Load Whisper Model ──
-logger.info("Loading Faster Whisper large-v3 model...")
-try:
-    from faster_whisper import WhisperModel
-    global_model = WhisperModel("large-v3", device="auto", compute_type="default")
-    MODEL_LOADED = True
-    logger.info("✅ Whisper large-v3 loaded successfully!")
-except Exception as e:
-    logger.warning(f"⚠️ Fallback to small/cpu: {e}")
+# ── Global model reference (loaded on startup, NOT at import time) ──
+global_model = None
+MODEL_LOADED = False
+
+
+def _kill_port(port: int):
+    """Kill any process occupying the given port so we can bind cleanly."""
+    try:
+        result = subprocess.run(
+            ["fuser", "-k", f"{port}/tcp"],
+            capture_output=True, timeout=5
+        )
+        if result.returncode == 0:
+            logger.info(f"🔪 Killed stale process on port {port}")
+            time.sleep(0.5)          # give OS time to release the socket
+    except FileNotFoundError:
+        # fuser not available, try lsof fallback
+        try:
+            out = subprocess.check_output(
+                ["lsof", "-ti", f":{port}"], timeout=5
+            ).decode().strip()
+            for pid in out.split("\n"):
+                if pid and pid.isdigit():
+                    os.kill(int(pid), signal.SIGKILL)
+                    logger.info(f"🔪 Killed PID {pid} on port {port}")
+            time.sleep(0.5)
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+
+@app.on_event("startup")
+async def load_model():
+    """Load Whisper model once at startup — avoids double-load on re-import."""
+    global global_model, MODEL_LOADED
+
+    logger.info("Loading Faster Whisper large-v3 model...")
     try:
         from faster_whisper import WhisperModel
-        global_model = WhisperModel("small", device="cpu", compute_type="int8")
+        global_model = WhisperModel("large-v3", device="auto", compute_type="default")
         MODEL_LOADED = True
-    except Exception as e2:
-        logger.error(f"❌ Failed to load any model: {e2}")
-        global_model = None
-        MODEL_LOADED = False
+        logger.info("✅ Whisper large-v3 loaded successfully!")
+    except Exception as e:
+        logger.warning(f"⚠️ Fallback to small/cpu: {e}")
+        try:
+            from faster_whisper import WhisperModel
+            global_model = WhisperModel("small", device="cpu", compute_type="int8")
+            MODEL_LOADED = True
+        except Exception as e2:
+            logger.error(f"❌ Failed to load any model: {e2}")
+            global_model = None
+            MODEL_LOADED = False
 
 
 @app.get("/health")
@@ -162,5 +200,11 @@ async def stt_websocket_endpoint(websocket: WebSocket):
 
 if __name__ == "__main__":
     PORT = int(os.getenv("STT_PORT", "8123"))
+
+    # Kill any zombie process holding the port from a previous crash
+    _kill_port(PORT)
+
     logger.info(f"🚀 Starting Callex GPU STT on 0.0.0.0:{PORT}")
-    uvicorn.run("stt_server:app", host="0.0.0.0", port=PORT, log_level="error")
+    # Pass app object directly — do NOT use the string "stt_server:app"
+    # which causes uvicorn to re-import the module and double-load everything.
+    uvicorn.run(app, host="0.0.0.0", port=PORT, log_level="error")
