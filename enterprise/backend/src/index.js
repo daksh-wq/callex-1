@@ -38,7 +38,11 @@ import { setupSupervisorWS } from './ws/supervisor.js';
 import { setupDashboardWS } from './ws/dashboard.js';
 import { setupCXSTTWS } from './ws/_wst.js';
 
-dotenv.config();
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __root_filename = fileURLToPath(import.meta.url);
+const __root_dirname = path.dirname(__root_filename);
+dotenv.config({ path: path.resolve(__root_dirname, '../../../.env') });
 
 const app = express();
 const httpServer = createServer(app);
