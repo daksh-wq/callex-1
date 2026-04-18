@@ -8,7 +8,10 @@ module.exports = {
       interpreter: "none",
       env: {
         NODE_ENV: "production",
+        PYTHONPATH: ".",
       },
+      error_file: "logs/voice-error.log",
+      out_file: "logs/voice-out.log",
       autorestart: true,
       watch: false,
       max_memory_restart: "2G"
